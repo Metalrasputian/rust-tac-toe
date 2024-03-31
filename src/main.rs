@@ -1,11 +1,12 @@
 use std::io;
+use std::io::prelude::*;
 use std::convert::TryFrom;
 use rand::prelude::*;
 
 fn main () {
     let mut playing = true;
 
-    while playing {
+    while playing{
         clear_screen();
         let mut round_won = false;
 
@@ -15,67 +16,80 @@ fn main () {
         let player_token = "X";
         let bot_token = "O";
 
-        while !round_won {
+        while !round_won || playing {
             //Clear Screen
             println!("{}", render_screen(board));
+            
+            //Get player command
+            let player_command = get_player_command();
 
-            //Fix function to return Ok() and Err() instead of an int or 10 as an error
-            let move_index = get_player_move();
+            if player_command.as_str().trim() == "exit" {
+                println!("Press any key to continue...");
+                io::stdin().read(&mut [0u8]).unwrap();
+                playing = false;
+            }
+            else { 
+                //Fix function to return Ok() and Err() instead of an int or 10 as an error
+                let move_index = get_player_move(player_command);
+                
+                if move_index < 10 {                
+                    //Better error catching here
+                    let board_index = usize::try_from(move_index - 1).unwrap();
 
-            if move_index < 10 {
-                //Better error catching here
-                let board_index = usize::try_from(move_index - 1).unwrap();
+                    let cell_value = board[board_index];
 
-                let cell_value = board[board_index];
-
-                if cell_value != " " {
-                    clear_screen();
-                    println!("{} is not a valid square. ({} is there).", move_index, cell_value);
-                }
-                else {
-                    clear_screen();
-                    board[board_index] = player_token;
-
-                    if check_win(board, player_token){
+                    if cell_value != " " {
                         clear_screen();
-                        println!("Player wins!");
-                        round_won = true;
+                        println!("{} is not a valid square. ({} is there).", move_index, cell_value);
                     }
                     else {
-                        //Bot move currently ignores board state. Likely a scope/mutability issue.
-                        let bot_move = get_bot_move(&board);
-    
-                        board[bot_move] = bot_token;
-    
-                        if check_win(board, bot_token){
+                        clear_screen();
+                        board[board_index] = player_token;
+
+                        if check_win(board, player_token){
                             clear_screen();
-                            println!("Bot wins!");
+                            println!("Player wins!");
                             round_won = true;
+                        }
+                        else {
+                            //Bot move currently ignores board state. Likely a scope/mutability issue.
+                            let bot_move = get_bot_move(&board);
+        
+                            board[bot_move] = bot_token;
+        
+                            if check_win(board, bot_token){
+                                clear_screen();
+                                println!("Bot wins!");
+                                round_won = true;
+                            }
                         }
                     }
                 }
-            }
-            else {
-                println!("Invalid input. Please enter a number from 1 to 9!");
+                else {
+                    println!("Invalid input. Please enter a number from 1 to 9!");
+                }
             }
         }
-        //Print final board        
-        println!("{}", render_screen(board));
 
-        //Exit code
-        let mut exit_answer = String::new();        
+        if playing {
+            //Print final board        
+            println!("{}", render_screen(board));
 
-        while exit_answer.as_str().trim() != "y" && exit_answer.as_str().trim() != "n" {
-            println!("Would you like to play again? (y/n): ");
+            //Exit code
+            let mut exit_answer = String::new();        
 
-            io::stdin()
-                .read_line(&mut exit_answer)
-                .expect("No input detected!");
+            while exit_answer.as_str().trim() != "y" && exit_answer.as_str().trim() != "n" {
+                println!("Would you like to play again? (y/n): ");
 
-            match exit_answer.as_str().trim() {
-                "n" => { println!("Goodbye!"); playing = false; },
-                "y" => { println!("Another round!"); },
-                _ => { println!("Please enter a valid answer!") },
+                io::stdin()
+                    .read_line(&mut exit_answer)
+                    .expect("No input detected!");
+
+                match exit_answer.as_str().trim() {
+                    "n" => { println!("Goodbye!"); playing = false; },
+                    "y" => { println!("Another round!"); },
+                    _ => { println!("Please enter a valid answer!") },
+                }
             }
         }
     }
@@ -99,7 +113,6 @@ fn get_bot_move(board: &[&str;9]) -> usize {
 
     for i in 0..board.len() {
         if board[usize::try_from(i).unwrap()] == " "{
-            println!("{}", i);
             valid_cells.push(u32::try_from(i).unwrap());
         }
     }    
@@ -107,13 +120,18 @@ fn get_bot_move(board: &[&str;9]) -> usize {
     rand::thread_rng().gen_range(0..valid_cells.len())
 }
 
-fn get_player_move() -> u32 {
-    let mut player_move = String::new();
+fn get_player_command() -> String{
+    let mut player_command = String::new();
     println!("Enter your next square (1-9): ");
 
     io::stdin()
-        .read_line(&mut player_move)
+        .read_line(&mut player_command)
         .expect("No input detected!");
+
+    player_command.to_lowercase()
+}
+
+fn get_player_move(player_move: String) -> u32 {
 
     //Returns 10 since that's out of range for our logic.
     match player_move.trim().parse::<u32>() {
@@ -147,5 +165,5 @@ fn check_win(board: [&str;9], token: &str) -> bool {
 }
 
 fn clear_screen(){
-    std::process::Command::new("cls").status().or_else(|_| std::process::Command::new("clear").status()).unwrap().success();
+    std::process::Command::new("cmd").arg("/C").arg("cls").status().or_else(|_| std::process::Command::new("clear").status()).unwrap().success();
 }
