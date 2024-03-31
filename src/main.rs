@@ -15,6 +15,9 @@ fn main () {
         let bot_token = "O";
 
         while !round_won {
+            //Clear Screen
+            clear_screen();
+
             println!("{}", render_screen(board));
 
             //Fix function to return Ok() and Err() instead of an int or 10 as an error
@@ -34,6 +37,7 @@ fn main () {
                 }
 
                 if check_win(board, player_token){
+                    clear_screen();
                     println!("Player wins!");
                     round_won = true;
                 }
@@ -43,8 +47,11 @@ fn main () {
 
                     board[bot_move] = bot_token;
 
-                    println!("Bot wins!");
-                    round_won = true;
+                    if check_win(board, bot_token){
+                        clear_screen();
+                        println!("Bot wins!");
+                        round_won = true;
+                    }
                 }
             }
             else {
@@ -52,6 +59,7 @@ fn main () {
             }
         }
         //Print final board
+        
         println!("{}", render_screen(board));
 
         //Exit code
@@ -135,4 +143,8 @@ fn check_win(board: [&str;9], token: &str) -> bool {
     if board[0] == token && board[4] == token && board[8] == token || board[2] == token && board[4] == token && board[6] == token { return true; }
 
     false
+}
+
+fn clear_screen(){
+    std::process::Command::new("cls").status().or_else(|_| std::process::Command::new("clear").status()).unwrap().success();
 }
