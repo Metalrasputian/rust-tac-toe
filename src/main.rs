@@ -6,6 +6,7 @@ fn main () {
     let mut playing = true;
 
     while playing {
+        clear_screen();
         let mut round_won = false;
 
         let mut board = [" "; 9];
@@ -16,8 +17,6 @@ fn main () {
 
         while !round_won {
             //Clear Screen
-            clear_screen();
-
             println!("{}", render_screen(board));
 
             //Fix function to return Ok() and Err() instead of an int or 10 as an error
@@ -30,27 +29,29 @@ fn main () {
                 let cell_value = board[board_index];
 
                 if cell_value != " " {
+                    clear_screen();
                     println!("{} is not a valid square. ({} is there).", move_index, cell_value);
                 }
                 else {
-                    board[board_index] = player_token;
-                }
-
-                if check_win(board, player_token){
                     clear_screen();
-                    println!("Player wins!");
-                    round_won = true;
-                }
-                else {
-                    //Bot move currently ignores board state. Likely a scope/mutability issue.
-                    let bot_move = get_bot_move(board);
+                    board[board_index] = player_token;
 
-                    board[bot_move] = bot_token;
-
-                    if check_win(board, bot_token){
+                    if check_win(board, player_token){
                         clear_screen();
-                        println!("Bot wins!");
+                        println!("Player wins!");
                         round_won = true;
+                    }
+                    else {
+                        //Bot move currently ignores board state. Likely a scope/mutability issue.
+                        let bot_move = get_bot_move(&board);
+    
+                        board[bot_move] = bot_token;
+    
+                        if check_win(board, bot_token){
+                            clear_screen();
+                            println!("Bot wins!");
+                            round_won = true;
+                        }
                     }
                 }
             }
@@ -58,23 +59,22 @@ fn main () {
                 println!("Invalid input. Please enter a number from 1 to 9!");
             }
         }
-        //Print final board
-        
+        //Print final board        
         println!("{}", render_screen(board));
 
         //Exit code
         let mut exit_answer = String::new();        
 
         while exit_answer.as_str().trim() != "y" && exit_answer.as_str().trim() != "n" {
-            println!("Would you like to exit? (y/n): ");
+            println!("Would you like to play again? (y/n): ");
 
             io::stdin()
                 .read_line(&mut exit_answer)
                 .expect("No input detected!");
 
             match exit_answer.as_str().trim() {
-                "y" => { println!("Goodbye!"); playing = false; },
-                "n" => { println!("Another round!"); },
+                "n" => { println!("Goodbye!"); playing = false; },
+                "y" => { println!("Another round!"); },
                 _ => { println!("Please enter a valid answer!") },
             }
         }
@@ -94,14 +94,15 @@ fn render_screen(board: [&str;9]) -> String {
     screen
 }
 
-fn get_bot_move(board: [&str;9]) -> usize {
+fn get_bot_move(board: &[&str;9]) -> usize {
     let mut valid_cells = Vec::<u32>::new();
 
     for i in 0..board.len() {
         if board[usize::try_from(i).unwrap()] == " "{
+            println!("{}", i);
             valid_cells.push(u32::try_from(i).unwrap());
         }
-    }
+    }    
 
     rand::thread_rng().gen_range(0..valid_cells.len())
 }
