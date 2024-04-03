@@ -2,6 +2,7 @@ use std::io;
 use std::io::prelude::*;
 use std::convert::TryFrom;
 use rand::prelude::*;
+use exitcode;
 
 fn main () {
     let mut playing = true;
@@ -12,11 +13,15 @@ fn main () {
 
         let mut board = [" "; 9];
 
-        //Set up logic to change this to a coin flip for the user to be X or O
-        let player_token = "X";
-        let bot_token = "O";
+        let coin_flip = rand::thread_rng().gen_range(0..=1);
+        let player_turn = coin_flip == 0;
 
-        while !round_won || playing {
+        //Set up logic to change this to a coin flip for the user to be X or O
+
+        let player_token = if player_turn {"X"} else {"O"};
+        let bot_token = if player_turn {"O"} else {"X"};
+
+        while !round_won {
             //Clear Screen
             println!("{}", render_screen(board));
             
@@ -26,7 +31,7 @@ fn main () {
             if player_command.as_str().trim() == "exit" {
                 println!("Press any key to continue...");
                 io::stdin().read(&mut [0u8]).unwrap();
-                playing = false;
+                std::process::exit(exitcode::OK);
             }
             else { 
                 //Fix function to return Ok() and Err() instead of an int or 10 as an error
@@ -71,25 +76,23 @@ fn main () {
             }
         }
 
-        if playing {
-            //Print final board        
-            println!("{}", render_screen(board));
+        //Print final board        
+        println!("{}", render_screen(board));
 
-            //Exit code
-            let mut exit_answer = String::new();        
+        //Exit code
+        let mut exit_answer = String::new();        
 
-            while exit_answer.as_str().trim() != "y" && exit_answer.as_str().trim() != "n" {
-                println!("Would you like to play again? (y/n): ");
+        while exit_answer.as_str().trim() != "y" && exit_answer.as_str().trim() != "n" {
+            println!("Would you like to play again? (y/n): ");
 
-                io::stdin()
-                    .read_line(&mut exit_answer)
-                    .expect("No input detected!");
+            io::stdin()
+                .read_line(&mut exit_answer)
+                .expect("No input detected!");
 
-                match exit_answer.as_str().trim() {
-                    "n" => { println!("Goodbye!"); playing = false; },
-                    "y" => { println!("Another round!"); },
-                    _ => { println!("Please enter a valid answer!") },
-                }
+            match exit_answer.as_str().trim() {
+                "n" => { println!("Goodbye!"); playing = false; },
+                "y" => { println!("Another round!"); },
+                _ => { println!("Please enter a valid answer!") },
             }
         }
     }
@@ -109,15 +112,17 @@ fn render_screen(board: [&str;9]) -> String {
 }
 
 fn get_bot_move(board: &[&str;9]) -> usize {
-    let mut valid_cells = Vec::<u32>::new();
+    let mut valid_cells = Vec::<usize>::new();
 
     for i in 0..board.len() {
         if board[usize::try_from(i).unwrap()] == " "{
-            valid_cells.push(u32::try_from(i).unwrap());
+            valid_cells.push(usize::try_from(i).unwrap());
         }
-    }    
+    }
 
-    rand::thread_rng().gen_range(0..valid_cells.len())
+    let r_valid_move_index = rand::thread_rng().gen_range(0..valid_cells.len());
+
+    valid_cells[r_valid_move_index]
 }
 
 fn get_player_command() -> String{
@@ -165,5 +170,5 @@ fn check_win(board: [&str;9], token: &str) -> bool {
 }
 
 fn clear_screen(){
-    std::process::Command::new("cmd").arg("/C").arg("cls").status().or_else(|_| std::process::Command::new("clear").status()).unwrap().success();
+    let _result = std::process::Command::new("cmd").arg("/C").arg("cls").status().or_else(|_| std::process::Command::new("clear").status()).unwrap().success();
 }
