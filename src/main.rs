@@ -7,14 +7,14 @@ use exitcode;
 fn main () {
     let mut playing = true;
 
-    while playing{
+    while playing {
         clear_screen();
         let mut round_won = false;
 
         let mut board = [" "; 9];
 
         let coin_flip = rand::thread_rng().gen_range(0..=1);
-        let player_turn = coin_flip == 0;
+        let mut player_turn = coin_flip == 0;
 
         //Set up logic to change this to a coin flip for the user to be X or O
 
@@ -24,58 +24,61 @@ fn main () {
         while !round_won {
             //Clear Screen
             println!("{}", render_screen(board));
-            
-            //Get player command
-            let player_command = get_player_command();
 
-            if player_command.as_str().trim() == "exit" {
-                println!("Press any key to continue...");
-                io::stdin().read(&mut [0u8]).unwrap();
-                std::process::exit(exitcode::OK);
-            }
-            else { 
-                //Fix function to return Ok() and Err() instead of an int or 10 as an error
-                let move_index = get_player_move(player_command);
-                
-                if move_index < 10 {                
-                    //Better error catching here
-                    let board_index = usize::try_from(move_index - 1).unwrap();
+            if player_turn {
+                let player_command = get_player_command();
 
-                    let cell_value = board[board_index];
+                if player_command.as_str().trim() == "exit" {
+                    println!("Press any key to continue...");
+                    io::stdin().read(&mut [0u8]).unwrap();
+                    std::process::exit(exitcode::OK);
+                }
+                else { 
+                    //Fix function to return Ok() and Err() instead of an int or 10 as an error
+                    let move_index = get_player_move(player_command);
+                    
+                    if move_index < 10 {                
+                        //Better error catching here
+                        let board_index = usize::try_from(move_index - 1).unwrap();
 
-                    if cell_value != " " {
-                        clear_screen();
-                        println!("{} is not a valid square. ({} is there).", move_index, cell_value);
-                    }
-                    else {
-                        clear_screen();
-                        board[board_index] = player_token;
+                        let cell_value = board[board_index];
 
-                        if check_win(board, player_token){
+                        if cell_value != " " {
                             clear_screen();
-                            println!("Player wins!");
-                            round_won = true;
+                            println!("{} is not a valid square. ({} is there).", move_index, cell_value);
                         }
                         else {
-                            //Bot move currently ignores board state. Likely a scope/mutability issue.
-                            let bot_move = get_bot_move(&board);
-        
-                            board[bot_move] = bot_token;
-        
-                            if check_win(board, bot_token){
+                            clear_screen();
+                            board[board_index] = player_token;
+
+                            if check_win(board, player_token){
                                 clear_screen();
-                                println!("Bot wins!");
+                                println!("Player wins!");
                                 round_won = true;
                             }
                         }
                     }
-                }
-                else {
-                    println!("Invalid input. Please enter a number from 1 to 9!");
+                    else {
+                        println!("Invalid input. Please enter a number from 1 to 9!");
+                    }
                 }
             }
-        }
+            else {
+                //Bot move currently ignores board state. Likely a scope/mutability issue.
+                let bot_move = get_bot_move(&board);
+            
+                board[bot_move] = bot_token;
 
+                if check_win(board, bot_token){
+                    clear_screen();
+                    println!("Bot wins!");
+                    round_won = true;
+                }
+            }
+
+            player_turn = !player_turn;
+        }
+        //Get player command
         //Print final board        
         println!("{}", render_screen(board));
 
